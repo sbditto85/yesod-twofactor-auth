@@ -1,19 +1,36 @@
 module Yesod.TwoFactorAuth
-  ( YesodTotp
+  ( TwoFactorPlugin
+  , YesodTwoFactorAuth
   ) where
 
+import           Yesod.Auth
 import           Yesod.Core
-import           Yesod.TwoFactorAuth.Core
+import           Yesod.TwoFactorAuth.Core hiding ( Method )
+
+type Method = Text
+type Piece = Text
+type TwoFactorHandler master a = HandlerT TwoFactorAuth (HandlerT master IO) a
+
+data TwoFactorPlugin master = TwoFactorPlugin
+    { tfName :: Text
+    , tfDispatch :: Method -> [Piece] -> TwoFactorHandler master TypedContent
+    , tfLogin :: (Route Auth -> Route master) -> WidgetT master IO ()
+    }
+
 
 class YesodAuth master => YesodTwoFactorAuth master where
-  enterTotpHandler :: HandlerT TwoFactorAuth (HandlerT master IO) Html
-  enterTotpHandler = defaultEnterTotpHandler
+  twoFactorPlugins :: master -> [ TwoFactorPlugin master ]
 
-  processTotpHandler :: HandlerT TwoFactorAuth (HandlerT master IO) Html
-  processTotpHandler = defaultProcessTotpHandler
+  showTwoFactorHandler :: HandlerT TwoFactorAuth (HandlerT master IO) Html
+  showTwoFactorHandler = defaultShowTwoFactorHandler
 
   success :: Creds master -> HandlerT master IO (AuthenticationResult master)
-  success = defaultSuccess
+  success = authenticate
 
   failure :: Creds master -> HandlerT master IO (AuthenticationResult master)
   failure = defaultFailure
+
+
+defaultShowTwoFactorHandler = error "do this"
+
+defaultFailure = error "do this"
